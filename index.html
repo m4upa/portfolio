@@ -33,7 +33,7 @@
         .path {
             background-color: white;
         }
-        #start, #end {
+        #player {
             background-color: green;
         }
         #end {
@@ -57,6 +57,8 @@
 <div id="message">Twoje IP to: <span id="ip"></span></div>
 
 <script>
+    const mazeSize = 20; // Wielkość labiryntu (20x20)
+
     // API do pobierania prawdziwego adresu IP
     async function getUserIP() {
         try {
@@ -91,9 +93,51 @@
 
         // Ustawianie punktu startowego i końcowego
         maze.children[0].classList.add('path');
-        maze.children[0].id = 'start';
+        maze.children[0].id = 'player'; // Dodajemy gracza na start
         maze.children[gridSize - 1].classList.add('path');
         maze.children[gridSize - 1].id = 'end';
+    }
+
+    // Funkcja obsługująca ruch gracza
+    function movePlayer(e) {
+        const player = document.getElementById('player');
+        const cells = document.querySelectorAll('.cell');
+        const playerIndex = Array.from(cells).indexOf(player);
+
+        let newIndex;
+
+        switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+                newIndex = playerIndex - mazeSize;
+                break;
+            case 'ArrowDown':
+            case 's':
+                newIndex = playerIndex + mazeSize;
+                break;
+            case 'ArrowLeft':
+            case 'a':
+                newIndex = playerIndex - 1;
+                break;
+            case 'ArrowRight':
+            case 'd':
+                newIndex = playerIndex + 1;
+                break;
+            default:
+                return;
+        }
+
+        // Sprawdzamy, czy nowa pozycja jest ścieżką (nie ścianą) i czy mieści się w labiryncie
+        if (newIndex >= 0 && newIndex < cells.length && cells[newIndex].classList.contains('path')) {
+            player.removeAttribute('id'); // Usuwamy id 'player' z obecnej pozycji
+            cells[newIndex].id = 'player'; // Przenosimy gracza na nową pozycję
+
+            // Sprawdzamy, czy gracz dotarł do końca
+            if (cells[newIndex].id === 'end') {
+                alert("Gratulacje! Ukończyłeś labirynt!");
+                // Można dodać restart lub inną akcję
+            }
+        }
     }
 
     // Dodajemy nasłuchiwanie na ścianach
@@ -110,9 +154,11 @@
 
     // Inicjalizacja labiryntu
     function initMaze() {
-        const size = 20; // Rozmiar labiryntu
-        generateMaze(size);
+        generateMaze(mazeSize);
         setupWallListeners(); // Ustawienie nasłuchiwania na ścianach
+
+        // Nasłuchiwanie na ruchy gracza
+        document.addEventListener('keydown', movePlayer);
     }
 
     // Uruchomienie na załadowaniu strony
