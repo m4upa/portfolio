@@ -20,24 +20,36 @@
 <body>
     <h1>Pac-Man Gra</h1>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <h2 id="status"></h2>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status');
 
-        // Parametry gry
+        let gameOver = false;
         let pacman = {
             x: 50,
             y: 50,
-            size: 30,
+            size: 20,
             speed: 5,
             dx: 5,
             dy: 0
         };
 
-        let dots = [];
-        const numDots = 20;
+        let ghosts = [
+            { x: 400, y: 400, size: 20, speed: 2, dx: 2, dy: 0, color: 'red' },
+            { x: 100, y: 400, size: 20, speed: 2, dx: 0, dy: 2, color: 'blue' }
+        ];
 
-        // Funkcja do rysowania Pac-Mana
+        let dots = [];
+        const numDots = 10;
+        const walls = [
+            { x: 100, y: 100, width: 300, height: 20 },
+            { x: 100, y: 200, width: 20, height: 300 },
+            { x: 300, y: 200, width: 20, height: 300 }
+        ];
+
+        // Rysowanie Pac-Mana
         function drawPacman() {
             ctx.beginPath();
             ctx.arc(pacman.x, pacman.y, pacman.size, 0.25 * Math.PI, 1.75 * Math.PI, false);
@@ -47,7 +59,18 @@
             ctx.closePath();
         }
 
-        // Funkcja do rysowania kropek
+        // Rysowanie duchów
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                ctx.beginPath();
+                ctx.arc(ghost.x, ghost.y, ghost.size, 0, Math.PI * 2);
+                ctx.fillStyle = ghost.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Rysowanie kropek
         function drawDots() {
             ctx.fillStyle = 'white';
             dots.forEach(dot => {
@@ -58,7 +81,15 @@
             });
         }
 
-        // Tworzenie kropek do zjedzenia
+        // Rysowanie ścian
+        function drawWalls() {
+            ctx.fillStyle = 'blue';
+            walls.forEach(wall => {
+                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+            });
+        }
+
+        // Tworzenie kropek
         function createDots() {
             for (let i = 0; i < numDots; i++) {
                 dots.push({
@@ -68,40 +99,70 @@
             }
         }
 
-        // Funkcja poruszania się Pac-Mana
+        // Ruch Pac-Mana
         function movePacman() {
             pacman.x += pacman.dx;
             pacman.y += pacman.dy;
 
-            // Ograniczenie ruchu do obszaru kanwy
+            // Ograniczenie ruchu Pac-Mana do planszy
             if (pacman.x - pacman.size < 0) pacman.x = pacman.size;
             if (pacman.x + pacman.size > canvas.width) pacman.x = canvas.width - pacman.size;
             if (pacman.y - pacman.size < 0) pacman.y = pacman.size;
             if (pacman.y + pacman.size > canvas.height) pacman.y = canvas.height - pacman.size;
+
+            // Kolizja ze ścianami
+            walls.forEach(wall => {
+                if (pacman.x + pacman.size > wall.x && pacman.x - pacman.size < wall.x + wall.width &&
+                    pacman.y + pacman.size > wall.y && pacman.y - pacman.size < wall.y + wall.height) {
+                    // Cofnięcie ruchu w przypadku kolizji
+                    pacman.x -= pacman.dx;
+                    pacman.y -= pacman.dy;
+                }
+            });
+        }
+
+        // Ruch duchów
+        function moveGhosts() {
+            ghosts.forEach(ghost => {
+                ghost.x += ghost.dx;
+                ghost.y += ghost.dy;
+
+                // Zmiana kierunku po kolizji z granicą planszy
+                if (ghost.x - ghost.size < 0 || ghost.x + ghost.size > canvas.width) ghost.dx *= -1;
+                if (ghost.y - ghost.size < 0 || ghost.y + ghost.size > canvas.height) ghost.dy *= -1;
+            });
+        }
+
+        // Sprawdzanie kolizji z duchami
+        function checkGhostCollision() {
+            ghosts.forEach(ghost => {
+                let dist = Math.hypot(pacman.x - ghost.x, pacman.y - ghost.y);
+                if (dist < pacman.size + ghost.size) {
+                    gameOver = true;
+                    statusText.innerHTML = "Koniec gry! Złapał Cię duch!";
+                }
+            });
         }
 
         // Sprawdzanie kolizji z kropkami
-        function checkCollisions() {
+        function checkDotCollision() {
             for (let i = dots.length - 1; i >= 0; i--) {
                 let dist = Math.hypot(pacman.x - dots[i].x, pacman.y - dots[i].y);
                 if (dist < pacman.size) {
-                    dots.splice(i, 1); // Usuń kropkę, gdy Pac-Man ją zje
+                    dots.splice(i, 1); // Zjedzenie kropki
                 }
             }
         }
 
-        // Funkcja do aktualizacji gry
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPacman();
-            drawDots();
-            movePacman();
-            checkCollisions();
-
-            requestAnimationFrame(update);
+        // Sprawdzanie, czy wszystkie kropki zostały zjedzone
+        function checkWinCondition() {
+            if (dots.length === 0) {
+                gameOver = true;
+                statusText.innerHTML = "Wygrałeś! Wszystkie kropki zostały zjedzone!";
+            }
         }
 
-        // Sterowanie
+        // Sterowanie Pac-Manem
         function changeDirection(e) {
             if (e.key === 'ArrowUp') {
                 pacman.dx = 0;
@@ -115,6 +176,23 @@
             } else if (e.key === 'ArrowRight') {
                 pacman.dx = pacman.speed;
                 pacman.dy = 0;
+            }
+        }
+
+        // Aktualizacja gry
+        function update() {
+            if (!gameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawWalls();
+                drawPacman();
+                drawGhosts();
+                drawDots();
+                movePacman();
+                moveGhosts();
+                checkDotCollision();
+                checkGhostCollision();
+                checkWinCondition();
+                requestAnimationFrame(update);
             }
         }
 
