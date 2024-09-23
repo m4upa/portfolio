@@ -1,11 +1,50 @@
-<!DOCTYPE HTML>
-<html lang="pl-PL">
+<!DOCTYPE html>
+<html lang="pl">
 <head>
-<meta charset="UTF-8">
-<title>strona</title>
-<link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labirynt</title>
+    <style>
+        #maze {
+            width: 300px;
+            height: 300px;
+            border: 2px solid black;
+            position: relative;
+        }
+        .wall {
+            background-color: black;
+            position: absolute;
+        }
+        #wall1 {
+            top: 50px;
+            left: 0;
+            width: 300px;
+            height: 10px;
+        }
+        #wall2 {
+            top: 100px;
+            left: 50px;
+            width: 10px;
+            height: 200px;
+        }
+    </style>
 </head>
 <body>
-<iframe width="1183" height="665" src="https://www.youtube.com/embed/vNePhmCMnbU?autoplay=1&loop=1"></iframe>
+    <h1>Labirynt</h1>
+    <div id="maze">
+        <div id="wall1" class="wall"></div>
+        <div id="wall2" class="wall"></div>
+    </div>
+    <script>
+        document.querySelectorAll('.wall').forEach(wall => {
+            wall.addEventListener('mouseover', () => {
+                fetch('https://api.ipify.org?format=json')
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(`Twoje IP to: ${data.ip}`);
+                    });
+            });
+        });
+    </script>
 </body>
 </html>
