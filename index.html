@@ -21,12 +21,16 @@
     <h1>Pac-Man Gra</h1>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
     <h2 id="status"></h2>
+    <h2 id="level">Poziom: 1</h2>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const statusText = document.getElementById('status');
+        const levelText = document.getElementById('level');
 
         let gameOver = false;
+        let level = 1;
+
         let pacman = {
             x: 50,
             y: 50,
@@ -37,8 +41,8 @@
         };
 
         let ghosts = [
-            { x: 400, y: 400, size: 20, speed: 2, dx: 2, dy: 0, color: 'red' },
-            { x: 100, y: 400, size: 20, speed: 2, dx: 0, dy: 2, color: 'blue' }
+            { x: 400, y: 400, size: 20, speed: 2, color: 'red' },
+            { x: 100, y: 400, size: 20, speed: 2, color: 'blue' }
         ];
 
         let dots = [];
@@ -91,6 +95,7 @@
 
         // Tworzenie kropek
         function createDots() {
+            dots = []; // Wyczyszczenie poprzednich kropek przy każdym poziomie
             for (let i = 0; i < numDots; i++) {
                 dots.push({
                     x: Math.random() * canvas.width,
@@ -114,18 +119,29 @@
             walls.forEach(wall => {
                 if (pacman.x + pacman.size > wall.x && pacman.x - pacman.size < wall.x + wall.width &&
                     pacman.y + pacman.size > wall.y && pacman.y - pacman.size < wall.y + wall.height) {
-                    // Cofnięcie ruchu w przypadku kolizji
                     pacman.x -= pacman.dx;
                     pacman.y -= pacman.dy;
                 }
             });
         }
 
-        // Ruch duchów
+        // Ruch duchów - podążanie za Pac-Manem
         function moveGhosts() {
             ghosts.forEach(ghost => {
-                ghost.x += ghost.dx;
-                ghost.y += ghost.dy;
+                let distX = pacman.x - ghost.x;
+                let distY = pacman.y - ghost.y;
+
+                // Ruch w stronę Pac-Mana
+                if (distX > 0) {
+                    ghost.x += ghost.speed;
+                } else {
+                    ghost.x -= ghost.speed;
+                }
+                if (distY > 0) {
+                    ghost.y += ghost.speed;
+                } else {
+                    ghost.y -= ghost.speed;
+                }
 
                 // Zmiana kierunku po kolizji z granicą planszy
                 if (ghost.x - ghost.size < 0 || ghost.x + ghost.size > canvas.width) ghost.dx *= -1;
@@ -157,9 +173,17 @@
         // Sprawdzanie, czy wszystkie kropki zostały zjedzone
         function checkWinCondition() {
             if (dots.length === 0) {
-                gameOver = true;
-                statusText.innerHTML = "Wygrałeś! Wszystkie kropki zostały zjedzone!";
+                nextLevel(); // Przejście do następnego poziomu
             }
+        }
+
+        // Funkcja zwiększająca poziom trudności
+        function nextLevel() {
+            level++;
+            pacman.speed += 1; // Pac-Man porusza się szybciej
+            ghosts.forEach(ghost => ghost.speed += 0.5); // Duchy poruszają się szybciej
+            levelText.innerHTML = "Poziom: " + level;
+            createDots(); // Tworzenie nowych kropek na kolejnym poziomie
         }
 
         // Sterowanie Pac-Manem
